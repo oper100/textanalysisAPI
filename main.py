@@ -1,8 +1,8 @@
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from fastapi import FastAPI, HTTPException
-
 analyses_bd = []
+next_id = 0
 
 app = FastAPI()
 
@@ -20,26 +20,27 @@ class AnalysisResponse(BaseModel):
 
 @app.post("/analyze")
 async def analyze(request: TextRequest):
+    global next_id
     text = request.text
 
     char_count = len(text)
     word_count = len(text.split())
     sentence_count = text.count(".")
-    analysis_id = len(analyses_bd) + 1
+    next_id += 1
 
     result = AnalysisResponse(
         char_count=char_count,
         word_count=word_count,
         sentence_count=sentence_count,
-        id=analysis_id,
+        id=next_id,
     )
     analyses_bd.append(result)
 
     return result
 
 
-@app.get("/get_all_analyses")
-async def analyzes():
+@app.get("/analyses")
+async def get_all_analyses():
     return analyses_bd
 
 
@@ -48,4 +49,13 @@ async def get_analysis(analysis_id: int):
     for analysis in analyses_bd:
         if analysis.id == analysis_id:
             return analysis
+    raise HTTPException(status_code=404, detail="wrong ID")
+
+
+@app.delete("/analyses/{analysis_id}")
+async def delete_analysis(analysis_id: int):
+    for analysis in analyses_bd:
+        if analysis.id == analysis_id:
+            analyses_bd.remove(analysis)
+            return {"message": "Analysis deleted"}
     raise HTTPException(status_code=404, detail="wrong ID")
