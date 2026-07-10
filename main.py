@@ -25,7 +25,7 @@ class TextRequest(BaseModel):
     text: str
 
 
-class AnalysisResponse(SQLModel, table=True):
+class Analysis(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     char_count: int
     word_count: int
@@ -42,7 +42,7 @@ def analyze(request: TextRequest):
     word_count = len(text.split())
     sentence_count = text.count(".")
 
-    result = AnalysisResponse(
+    result = Analysis(
         char_count=char_count,
         word_count=word_count,
         sentence_count=sentence_count,
@@ -60,24 +60,24 @@ def analyze(request: TextRequest):
 @app.get("/analyses")
 def get_all_analyses():
     with Session(engine) as session:
-        return session.exec(select(AnalysisResponse)).all()
+        return session.exec(select(Analysis)).all()
 
 
 @app.get("/analyses/{analysis_id}")
 def get_analysis(analysis_id: int):
     with Session(engine) as session:
-        analysis = session.get(AnalysisResponse, analysis_id)
+        analysis = session.get(Analysis, analysis_id)
         if not analysis:
             raise HTTPException(status_code=404, detail="Wrong id!")
         return analysis
 
 
 @app.delete("/analyses/{analysis_id}")
-async def delete_analysis(analysis_id: int):
+def delete_analysis(analysis_id: int):
     with Session(engine) as session:
-        analysis = session.get(AnalysisResponse, analysis_id)
+        analysis = session.get(Analysis, analysis_id)
         if not analysis:
             raise HTTPException(status_code=404, detail="Wrong id!")
         session.delete(analysis)
         session.commit()
-        return {"message:": f"Analysis with id {analysis_id} was deleted!"}
+        return {"message": f"Analysis with id {analysis_id} was deleted!"}
